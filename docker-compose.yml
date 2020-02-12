@@ -1,7 +1,7 @@
 version: "3.2"
 
 services:
-  app: &app
+  rails: &rails
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -9,28 +9,29 @@ services:
        RUBY_VERSION: '2.7.0'
        BUNDLER_VERSION: '2.1.4'
     stdin_open: true
+    networks:
+      default:
     depends_on:
      - db
-    ports:
-      - "4000:3000"
     environment:
-      DATABASE_HOST: "db"
-      DATABASE_PORT: "mysql"
-      DATABASE_USER: "root"
-      DATABASE_PASSWORD: ""
+      DATABASE_HOST: db
       REDIS_URL: 'redis://redis:6379/'
+
+  app: &app
+    <<: *rails
+    ports:
+      - "3000:3000"
     command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -b 0.0.0.0"
 
   db:
-    image: mysql:latest
+    image: mysql:5.6
     ports:
       - "3307:3306"
     environment:
-      POSTGRES_USER: "mysql"
-      POSTGRES_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
 
   worker:
-    <<: *app
+    <<: *rails
     command: bundle exec sidekiq
 
   redis:
